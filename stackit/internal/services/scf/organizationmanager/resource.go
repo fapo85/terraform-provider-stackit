@@ -120,7 +120,7 @@ func (s scfOrganizationManagerResource) Schema(ctx context.Context, request reso
 			},
 			"platform_id": schema.StringAttribute{
 				Description: descriptions["platform_id"],
-				Required:    false,
+				Computed:    true,
 				Validators: []validator.String{
 					validate.UUID(),
 					validate.NoSeparator(),
@@ -136,7 +136,7 @@ func (s scfOrganizationManagerResource) Schema(ctx context.Context, request reso
 			},
 			"org_id": schema.StringAttribute{
 				Description: descriptions["org_id"],
-				Computed:    true,
+				Required:    true,
 				Validators: []validator.String{
 					validate.UUID(),
 					validate.NoSeparator(),
