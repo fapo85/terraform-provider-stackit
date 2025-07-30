@@ -1,0 +1,354 @@
+package scf
+
+import (
+	"context"
+	_ "embed"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/stackitcloud/stackit-sdk-go/services/scf"
+	"maps"
+	"strings"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	stackitSdkConfig "github.com/stackitcloud/stackit-sdk-go/core/config"
+	"github.com/stackitcloud/stackit-sdk-go/core/utils"
+	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/core"
+	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/testutil"
+)
+
+//go:embed testdata/resource-min.tf
+var resourceMin string
+
+//go:embed testdata/resource-max.tf
+var resourceMax string
+
+var nameMin = fmt.Sprintf("scf-min-%s-org", acctest.RandStringFromCharSet(5, acctest.CharSetAlphaNum))
+var nameMinUpdated = fmt.Sprintf("git-min-%s-org", acctest.RandStringFromCharSet(5, acctest.CharSetAlphaNum))
+var nameMax = fmt.Sprintf("scf-max-%s-org", acctest.RandStringFromCharSet(5, acctest.CharSetAlphaNum))
+var nameMaxUpdated = fmt.Sprintf("scf-max-%s-org", acctest.RandStringFromCharSet(5, acctest.CharSetAlphaNum))
+var platformIdMax = uuid.New().String()
+var quotaIdMax = uuid.New().String()
+var quotaIdMaxUpdated = uuid.New().String()
+var suspendedMax = true
+
+var testConfigVarsMin = config.Variables{
+	"project_id": config.StringVariable(testutil.ProjectId),
+	"name":       config.StringVariable(nameMin),
+}
+
+var testConfigVarsMax = config.Variables{
+	"project_id":  config.StringVariable(testutil.ProjectId),
+	"name":        config.StringVariable(nameMax),
+	"platform_id": config.StringVariable(platformIdMax),
+	"quota_id":    config.StringVariable(quotaIdMax),
+	"suspended":   config.BoolVariable(suspendedMax),
+}
+
+func testScfOrgConfigVarsMinUpdated() config.Variables {
+	tempConfig := make(config.Variables, len(testConfigVarsMin))
+	maps.Copy(tempConfig, testConfigVarsMin)
+	// update scf organization to a new name
+	tempConfig["name"] = config.StringVariable(nameMinUpdated)
+	return tempConfig
+}
+
+//TODO add scf org manager tests
+
+func testScfOrgConfigVarsMaxUpdated() config.Variables {
+	tempConfig := make(config.Variables, len(testConfigVarsMax))
+	maps.Copy(tempConfig, testConfigVarsMax)
+	// update scf organization to a new name, unsuspend it and assign a new quota
+	tempConfig["name"] = config.StringVariable(nameMaxUpdated)
+	tempConfig["quota_id"] = config.StringVariable(quotaIdMaxUpdated)
+	tempConfig["suspended"] = config.BoolVariable(!suspendedMax)
+	return tempConfig
+}
+
+func TestAccScfOrganizationMin(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutil.TestAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckScfOrganizationDestroy,
+		Steps: []resource.TestStep{
+			// Creation
+			{
+				ConfigVariables: testConfigVarsMin,
+				Config:          testutil.ScfProviderConfig() + resourceMin,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "project_id", testutil.ConvertConfigVariable(testConfigVarsMin["project_id"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "name", testutil.ConvertConfigVariable(testConfigVarsMin["name"])),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "created_at"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "platform_id"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "org_id"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "quota_id"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "region"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "status"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "suspended"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "updated_at"),
+				),
+			},
+			// Data source
+			{
+				ConfigVariables: testConfigVarsMin,
+				Config: fmt.Sprintf(`
+					%s
+
+					data "stackit_scf_organization" "org" {
+						project_id  = stackit_scf_organization.org.project_id
+						instance_id = stackit_scf_organization.org.instance_id
+					}
+					`, testutil.ScfProviderConfig()+resourceMin,
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Instance
+					resource.TestCheckResourceAttr("data.stackit_scf_organization.org", "project_id", testutil.ConvertConfigVariable(testConfigVarsMin["project_id"])),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "project_id",
+						"data.stackit_scf_organization.org", "project_id",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "created_at",
+						"data.stackit_scf_organization.org", "created_at",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "name",
+						"data.stackit_scf_organization.org", "name",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "platform_id",
+						"data.stackit_scf_organization.org", "platform_id",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "org_id",
+						"data.stackit_scf_organization.org", "org_id",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "quota_id",
+						"data.stackit_scf_organization.org", "quota_id",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "region",
+						"data.stackit_scf_organization.org", "region",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "status",
+						"data.stackit_scf_organization.org", "status",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "suspended",
+						"data.stackit_scf_organization.org", "suspended",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "updated_at",
+						"data.stackit_scf_organization.org", "updated_at",
+					),
+				),
+			},
+			// Import
+			{
+				ConfigVariables: testConfigVarsMin,
+				ResourceName:    "stackit_scf_organization.org",
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					r, ok := s.RootModule().Resources["stackit_scf_organization.org"]
+					if !ok {
+						return "", fmt.Errorf("couldn't find resource stackit_scf_organization.org")
+					}
+					orgId, ok := r.Primary.Attributes["org_id"]
+					if !ok {
+						return "", fmt.Errorf("couldn't find attribute org_id")
+					}
+					return fmt.Sprintf("%s,%s", testutil.ProjectId, orgId), nil
+				},
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update
+			{
+				ConfigVariables: testScfOrgConfigVarsMinUpdated(),
+				Config:          testutil.ScfProviderConfig() + resourceMin,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "project_id", testutil.ConvertConfigVariable(testScfOrgConfigVarsMinUpdated()["project_id"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "name", testutil.ConvertConfigVariable(testScfOrgConfigVarsMinUpdated()["name"])),
+
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "created_at"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "platform_id"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "org_id"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "quota_id"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "region"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "status"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "suspended"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "updated_at"),
+				),
+			},
+			// Deletion is done by the framework implicitly
+		},
+	})
+}
+
+func TestAccScfOrgMax(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutil.TestAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckScfOrganizationDestroy,
+		Steps: []resource.TestStep{
+			// Creation
+			{
+				ConfigVariables: testConfigVarsMax,
+				Config:          testutil.ScfProviderConfig() + resourceMax,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "project_id", testutil.ConvertConfigVariable(testConfigVarsMax["project_id"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "name", testutil.ConvertConfigVariable(testConfigVarsMax["name"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "platform_id", testutil.ConvertConfigVariable(testConfigVarsMax["platform_id"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "quota_id", testutil.ConvertConfigVariable(testConfigVarsMax["quota_id"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "suspended", testutil.ConvertConfigVariable(testConfigVarsMax["suspended"])),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "created_at"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "org_id"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "region"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "status"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "updated_at"),
+				),
+			},
+			// Data source
+			{
+				ConfigVariables: testConfigVarsMax,
+				Config: fmt.Sprintf(`
+					%s
+
+					data "stackit_scf_organization" "org" {
+						project_id  = stackit_scf_organization.org.project_id
+						instance_id = stackit_scf_organization.org.instance_id
+					}
+					`, testutil.ScfProviderConfig()+resourceMax,
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Instance
+					resource.TestCheckResourceAttr("data.stackit_scf_organization.org", "project_id", testutil.ConvertConfigVariable(testConfigVarsMax["project_id"])),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "project_id",
+						"data.stackit_scf_organization.org", "project_id",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "created_at",
+						"data.stackit_scf_organization.org", "created_at",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "name",
+						"data.stackit_scf_organization.org", "name",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "platform_id",
+						"data.stackit_scf_organization.org", "platform_id",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "org_id",
+						"data.stackit_scf_organization.org", "org_id",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "quota_id",
+						"data.stackit_scf_organization.org", "quota_id",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "region",
+						"data.stackit_scf_organization.org", "region",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "status",
+						"data.stackit_scf_organization.org", "status",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "suspended",
+						"data.stackit_scf_organization.org", "suspended",
+					),
+					resource.TestCheckResourceAttrPair(
+						"stackit_scf_organization.org", "updated_at",
+						"data.stackit_scf_organization.org", "updated_at",
+					),
+				),
+			},
+			// Import
+			{
+				ConfigVariables: testConfigVarsMax,
+				ResourceName:    "stackit_scf_organization.org",
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					r, ok := s.RootModule().Resources["stackit_scf_organization.org"]
+					if !ok {
+						return "", fmt.Errorf("couldn't find resource stackit_scf_organization.org")
+					}
+					orgId, ok := r.Primary.Attributes["org_id"]
+					if !ok {
+						return "", fmt.Errorf("couldn't find attribute org_id")
+					}
+					return fmt.Sprintf("%s,%s", testutil.ProjectId, orgId), nil
+				},
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update
+			{
+				ConfigVariables: testScfOrgConfigVarsMaxUpdated(),
+				Config:          testutil.ScfProviderConfig() + resourceMax,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "project_id", testutil.ConvertConfigVariable(testConfigVarsMax["project_id"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "name", testutil.ConvertConfigVariable(testConfigVarsMax["name"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "platform_id", testutil.ConvertConfigVariable(testConfigVarsMax["platform_id"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "quota_id", testutil.ConvertConfigVariable(testConfigVarsMax["quota_id"])),
+					resource.TestCheckResourceAttr("stackit_scf_organization.org", "suspended", testutil.ConvertConfigVariable(testConfigVarsMax["suspended"])),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "created_at"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "org_id"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "region"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "status"),
+					resource.TestCheckResourceAttrSet("stackit_scf_organization.org", "updated_at"),
+				),
+			},
+			// Deletion is done by the framework implicitly
+		},
+	})
+}
+
+func testAccCheckScfOrganizationDestroy(s *terraform.State) error {
+	ctx := context.Background()
+	var client *scf.APIClient
+	var err error
+
+	if testutil.ScfCustomEndpoint == "" {
+		client, err = scf.NewAPIClient()
+	} else {
+		client, err = scf.NewAPIClient(
+			stackitSdkConfig.WithEndpoint(testutil.ScfCustomEndpoint),
+		)
+	}
+
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
+
+	var orgsToDestroy []string
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "stackit_scf_organization" {
+			continue
+		}
+		orgId := strings.Split(rs.Primary.ID, core.Separator)[1]
+		orgsToDestroy = append(orgsToDestroy, orgId)
+	}
+
+	organizationsList, err := client.ListOrganizations(ctx, testutil.ProjectId, testutil.Region).Execute()
+	if err != nil {
+		return fmt.Errorf("getting scf organizations: %w", err)
+	}
+
+	scfOrgs := organizationsList.GetResources()
+	for i := range scfOrgs {
+		if scfOrgs[i].Guid == nil {
+			continue
+		}
+		if utils.Contains(orgsToDestroy, *scfOrgs[i].Guid) {
+			_, err := client.DeleteOrganizationExecute(ctx, testutil.ProjectId, testutil.Region, *scfOrgs[i].Guid)
+			if err != nil {
+				return fmt.Errorf("destroying scf organization %s during CheckDestroy: %w", *scfOrgs[i].Guid, err)
+			}
+		}
+	}
+	return nil
+}

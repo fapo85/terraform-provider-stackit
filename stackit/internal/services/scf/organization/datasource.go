@@ -133,7 +133,7 @@ func (s scfOrganizationDataSource) Read(ctx context.Context, request datasource.
 		return
 	}
 
-	err = mapFields(ctx, scfOrgResponse, &model)
+	err = mapFields(scfOrgResponse, &model)
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error reading scf organization", fmt.Sprintf("Processing API response: %v", err))
 		return
