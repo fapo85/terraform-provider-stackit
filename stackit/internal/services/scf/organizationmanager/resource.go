@@ -205,7 +205,7 @@ func (s scfOrganizationManagerResource) Create(ctx context.Context, request reso
 		return
 	}
 
-	err = mapFieldsCreate(ctx, scfOrgManagerCreateResponse, &model)
+	err = mapFieldsCreate(scfOrgManagerCreateResponse, &model)
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error creating scf organization", fmt.Sprintf("Mapping fields: %v", err))
 		return
@@ -246,7 +246,7 @@ func (s scfOrganizationManagerResource) Read(ctx context.Context, request resour
 		return
 	}
 
-	err = mapFieldsUpdate(ctx, scfOrgManager, &model)
+	err = mapFieldsUpdate(scfOrgManager, &model)
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error reading scf organization manager", fmt.Sprintf("Processing API response: %v", err))
 		return
@@ -286,7 +286,7 @@ func (s scfOrganizationManagerResource) Delete(ctx context.Context, request reso
 	tflog.Info(ctx, "Scf organization deleted")
 }
 
-func mapFieldsCreate(ctx context.Context, response *scf.OrgManagerResponse, model *Model) error {
+func mapFieldsCreate(response *scf.OrgManagerResponse, model *Model) error {
 	if response == nil {
 		return fmt.Errorf("response input is nil")
 	}
@@ -312,7 +312,7 @@ func mapFieldsCreate(ctx context.Context, response *scf.OrgManagerResponse, mode
 	return nil
 }
 
-func mapFieldsUpdate(ctx context.Context, response *scf.OrgManager, model *Model) error {
+func mapFieldsUpdate(response *scf.OrgManager, model *Model) error {
 	if response == nil {
 		return fmt.Errorf("response input is nil")
 	}

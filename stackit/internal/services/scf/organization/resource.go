@@ -191,12 +191,15 @@ func (s scfOrganizationResource) Create(ctx context.Context, request resource.Cr
 	}
 
 	// Set logging context with the project ID and instance ID.
+	region := model.Region.ValueString()
 	projectId := model.ProjectId.ValueString()
+	orgId := model.OrgId.ValueString()
 	orgName := model.Name.ValueString()
+	quotaId := model.QuotaId.ValueString()
 	ctx = tflog.SetField(ctx, "project_id", projectId)
 	ctx = tflog.SetField(ctx, "org_name", orgName)
 
-	payload, diags := toCreatePayload(ctx, &model)
+	payload, diags := toCreatePayload(&model)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
@@ -211,6 +214,19 @@ func (s scfOrganizationResource) Create(ctx context.Context, request resource.Cr
 		return
 	}
 
+	// Apply the org quota if provided
+	if quotaId != "" {
+		applyOrgQuota, err := s.client.ApplyOrganizationQuota(ctx, projectId, region, orgId).ApplyOrganizationQuotaPayload(
+			scf.ApplyOrganizationQuotaPayload{
+				QuotaId: &quotaId,
+			}).Execute()
+		if err != nil {
+			core.LogAndAddError(ctx, &response.Diagnostics, "Error applying organization quota", fmt.Sprintf("Processing API payload: %v", err))
+			return
+		}
+		model.QuotaId = types.StringPointerValue(applyOrgQuota.QuotaId)
+	}
+
 	// Load the newly created scf organization
 	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, s.providerData.GetRegion(), *scfOrgCreateResponse.Guid).Execute()
 	if err != nil {
@@ -218,7 +234,7 @@ func (s scfOrganizationResource) Create(ctx context.Context, request resource.Cr
 		return
 	}
 
-	err = mapFields(ctx, scfOrgResponse, &model)
+	err = mapFields(scfOrgResponse, &model)
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error creating scf organization", fmt.Sprintf("Mapping fields: %v", err))
 		return
@@ -260,7 +276,7 @@ func (s scfOrganizationResource) Read(ctx context.Context, request resource.Read
 		return
 	}
 
-	err = mapFields(ctx, scfOrgResponse, &model)
+	err = mapFields(scfOrgResponse, &model)
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error reading scf organization", fmt.Sprintf("Processing API response: %v", err))
 		return
@@ -283,9 +299,11 @@ func (s scfOrganizationResource) Update(ctx context.Context, request resource.Up
 	if response.Diagnostics.HasError() {
 		return
 	}
+	region := model.Region.ValueString()
 	projectId := model.ProjectId.ValueString()
 	orgId := model.OrgId.ValueString()
 	name := model.Name.ValueString()
+	quotaId := model.QuotaId.ValueString()
 	suspended := model.Suspended.ValueBool()
 
 	ctx = tflog.SetField(ctx, "project_id", projectId)
@@ -299,26 +317,41 @@ func (s scfOrganizationResource) Update(ctx context.Context, request resource.Up
 		return
 	}
 
-	//TODO will update be only called if there are changes or do we have to check?
-	//if org, err := s.client.GetOrganization(ctx, model.ProjectId.ValueString(), model.Region.ValueString(), model.Id.ValueString()).Execute(); err != nil {
-	//	core.LogAndAddError(ctx, &response.Diagnostics, "Error retrieving organization state", fmt.Sprintf("Getting organization state: %v", err))
-	//}
-	//if model.Name.ValueString() == *org.Name && model.Suspended.ValueBool() == *org.Suspended {
-
-	updatedOrg, err := s.client.UpdateOrganization(ctx, projectId, model.Region.ValueString(), model.OrgId.ValueString()).UpdateOrganizationPayload(
-		scf.UpdateOrganizationPayload{
-			Name:      &name,
-			Suspended: &suspended,
-		}).Execute()
+	org, err := s.client.GetOrganization(ctx, projectId, region, orgId).Execute()
 	if err != nil {
-		core.LogAndAddError(ctx, &response.Diagnostics, "Error updating organization", fmt.Sprintf("Processing API payload: %v", err))
+		core.LogAndAddError(ctx, &response.Diagnostics, "Error retrieving organization state", fmt.Sprintf("Getting organization state: %v", err))
 		return
 	}
 
-	err = mapFields(ctx, updatedOrg, &model)
-	if err != nil {
-		core.LogAndAddError(ctx, &response.Diagnostics, "Error updating server", fmt.Sprintf("Processing API payload: %v", err))
-		return
+	// handle a change of the organization name or the suspended flag
+	if name != org.GetName() || suspended != org.GetSuspended() {
+		updatedOrg, err := s.client.UpdateOrganization(ctx, projectId, region, orgId).UpdateOrganizationPayload(
+			scf.UpdateOrganizationPayload{
+				Name:      &name,
+				Suspended: &suspended,
+			}).Execute()
+		if err != nil {
+			core.LogAndAddError(ctx, &response.Diagnostics, "Error updating organization", fmt.Sprintf("Processing API payload: %v", err))
+			return
+		}
+		err = mapFields(updatedOrg, &model)
+		if err != nil {
+			core.LogAndAddError(ctx, &response.Diagnostics, "Error updating organization", fmt.Sprintf("Processing API payload: %v", err))
+			return
+		}
+	}
+
+	// handle a quota change of the org
+	if quotaId != org.GetQuotaId() {
+		applyOrgQuota, err := s.client.ApplyOrganizationQuota(ctx, projectId, region, orgId).ApplyOrganizationQuotaPayload(
+			scf.ApplyOrganizationQuotaPayload{
+				QuotaId: &quotaId,
+			}).Execute()
+		if err != nil {
+			core.LogAndAddError(ctx, &response.Diagnostics, "Error applying organization quota", fmt.Sprintf("Processing API payload: %v", err))
+			return
+		}
+		model.QuotaId = types.StringPointerValue(applyOrgQuota.QuotaId)
 	}
 
 	diags = response.State.Set(ctx, model)
@@ -357,7 +390,7 @@ func (s scfOrganizationResource) Delete(ctx context.Context, request resource.De
 }
 
 // mapFields maps a SCF Organization response to the model.
-func mapFields(ctx context.Context, response *scf.Organization, model *Model) error {
+func mapFields(response *scf.Organization, model *Model) error {
 	if response == nil {
 		return fmt.Errorf("response input is nil")
 	}
@@ -385,7 +418,7 @@ func mapFields(ctx context.Context, response *scf.Organization, model *Model) er
 }
 
 // toCreatePayload creates the payload to create a scf organization instance
-func toCreatePayload(ctx context.Context, model *Model) (scf.CreateOrganizationPayload, diag.Diagnostics) {
+func toCreatePayload(model *Model) (scf.CreateOrganizationPayload, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 
 	if model == nil {
