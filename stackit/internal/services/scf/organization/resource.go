@@ -18,6 +18,7 @@ import (
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/conversion"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/core"
 	scfUtils "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/scf/utils"
+	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/utils"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/validate"
 	"net/http"
 )
@@ -36,6 +37,7 @@ type Model struct {
 	PlatformId types.String `tfsdk:"platform_id"`
 	ProjectId  types.String `tfsdk:"project_id"`
 	QuotaId    types.String `tfsdk:"quota_id"`
+	OrgId      types.String `tfsdk:"org_id"`
 	Region     types.String `tfsdk:"region"`
 	Status     types.String `tfsdk:"status"`
 	Suspended  types.Bool   `tfsdk:"suspended"`
@@ -49,32 +51,33 @@ func NewScfOrganizationResource() resource.Resource {
 
 // scfOrganizationResource implements the resource interface for scf organization instances.
 type scfOrganizationResource struct {
-	client *scf.APIClient
+	client       *scf.APIClient
+	providerData core.ProviderData
 }
 
 // descriptions for the attributes in the Schema
 var descriptions = map[string]string{
-	//TODO id = org guid? Or with project and platform guid?
-	"id":          "Terraform's internal resource ID, the globally unique identifier for the organization",
+	"id":          "Terraform's internal resource ID, structured as \"`project_id`,`org_id`\".",
 	"created_at":  "The time when the organization was created",
 	"name":        "The name of the organization",
 	"platform_id": "The ID of the platform associated with the organization",
 	"project_id":  "The ID of the project associated with the organization",
 	"quota_id":    "The ID of the quota associated with the organization",
-	//TODO region from provider
-	"region":     "The region where the organization is located",
-	"status":     "The status of the organization (e.g., deleting, delete_failed)",
-	"suspended":  "A boolean indicating whether the organization is suspended",
-	"updated_at": "The time when the organization was last updated",
+	"region":      "The region where the organization is located",
+	"status":      "The status of the organization (e.g., deleting, delete_failed)",
+	"suspended":   "A boolean indicating whether the organization is suspended",
+	"org_id":      "The ID of the organization",
+	"updated_at":  "The time when the organization was last updated",
 }
 
 func (s scfOrganizationResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
-	providerData, ok := conversion.ParseProviderData(ctx, request.ProviderData, &response.Diagnostics)
+	var ok bool
+	s.providerData, ok = conversion.ParseProviderData(ctx, request.ProviderData, &response.Diagnostics)
 	if !ok {
 		return
 	}
 
-	apiClient := scfUtils.ConfigureClient(ctx, &providerData, &response.Diagnostics)
+	apiClient := scfUtils.ConfigureClient(ctx, &s.providerData, &response.Diagnostics)
 	if response.Diagnostics.HasError() {
 		return
 	}
@@ -136,6 +139,14 @@ func (s scfOrganizationResource) Schema(ctx context.Context, request resource.Sc
 					validate.NoSeparator(),
 				},
 			},
+			"org_id": schema.StringAttribute{
+				Description: descriptions["org_id"],
+				Computed:    true,
+				Validators: []validator.String{
+					validate.UUID(),
+					validate.NoSeparator(),
+				},
+			},
 			"quota_id": schema.StringAttribute{
 				Description: descriptions["quota_id"],
 				Required:    false,
@@ -186,9 +197,8 @@ func (s scfOrganizationResource) Create(ctx context.Context, request resource.Cr
 		return
 	}
 
-	// Create the new git instance via the API client.
-	// TODO region
-	scfOrgCreateResponse, err := s.client.CreateOrganization(ctx, projectId, "eu01").
+	// Create the new scf organization via the API client.
+	scfOrgCreateResponse, err := s.client.CreateOrganization(ctx, projectId, s.providerData.GetRegion()).
 		CreateOrganizationPayload(payload).
 		Execute()
 	if err != nil {
@@ -196,8 +206,8 @@ func (s scfOrganizationResource) Create(ctx context.Context, request resource.Cr
 		return
 	}
 
-	//TODO region
-	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, "eu01", *scfOrgCreateResponse.Guid).Execute()
+	// Load the newly created scf organization
+	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, s.providerData.GetRegion(), *scfOrgCreateResponse.Guid).Execute()
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error creating scf organization", fmt.Sprintf("Calling API to load created org: %v", err))
 		return
@@ -230,11 +240,10 @@ func (s scfOrganizationResource) Read(ctx context.Context, request resource.Read
 
 	// Extract the project ID and instance id of the model
 	projectId := model.ProjectId.ValueString()
-	orgId := model.Id.ValueString()
+	orgId := model.OrgId.ValueString()
 
 	// Read the current scf organization via guid
-	// TODO region
-	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, "eu01", orgId).Execute()
+	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, s.providerData.GetRegion(), orgId).Execute()
 	if err != nil {
 		var oapiErr *oapierror.GenericOpenAPIError
 		ok := errors.As(err, &oapiErr)
@@ -260,6 +269,8 @@ func (s scfOrganizationResource) Read(ctx context.Context, request resource.Read
 
 // Update attempts to update the resource.
 func (s scfOrganizationResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
+	//TODO do we have to check if the region was changed and the throw an error as this is not supported?
+
 	// Retrieve values from plan
 	var model Model
 	diags := request.Plan.Get(ctx, &model)
@@ -268,7 +279,7 @@ func (s scfOrganizationResource) Update(ctx context.Context, request resource.Up
 		return
 	}
 	projectId := model.ProjectId.ValueString()
-	orgId := model.Id.ValueString()
+	orgId := model.OrgId.ValueString()
 	name := model.Name.ValueString()
 	suspended := model.Suspended.ValueBool()
 
@@ -289,7 +300,7 @@ func (s scfOrganizationResource) Update(ctx context.Context, request resource.Up
 	//}
 	//if model.Name.ValueString() == *org.Name && model.Suspended.ValueBool() == *org.Suspended {
 
-	updatedOrg, err := s.client.UpdateOrganization(ctx, projectId, model.Region.ValueString(), model.Id.ValueString()).UpdateOrganizationPayload(
+	updatedOrg, err := s.client.UpdateOrganization(ctx, projectId, model.Region.ValueString(), model.OrgId.ValueString()).UpdateOrganizationPayload(
 		scf.UpdateOrganizationPayload{
 			Name:      &name,
 			Suspended: &suspended,
@@ -324,7 +335,7 @@ func (s scfOrganizationResource) Delete(ctx context.Context, request resource.De
 	}
 
 	projectId := model.ProjectId.ValueString()
-	orgId := model.Id.ValueString()
+	orgId := model.OrgId.ValueString()
 	ctx = tflog.SetField(ctx, "project_id", projectId)
 	ctx = tflog.SetField(ctx, "org_id", orgId)
 
@@ -353,17 +364,18 @@ func mapFields(ctx context.Context, response *scf.Organization, model *Model) er
 		return fmt.Errorf("SCF organization guid not present")
 	}
 
-	model.Id = types.StringPointerValue(response.Guid)
-	model.CreateAt = types.StringValue(response.CreatedAt.String())
-	model.Name = types.StringPointerValue(response.Name)
-	model.PlatformId = types.StringPointerValue(response.PlatformId)
+	// Build the ID by combining the project ID and organization id and assign the model's fields.
+	model.Id = utils.BuildInternalTerraformId(model.ProjectId.ValueString(), *response.Guid)
 	model.ProjectId = types.StringPointerValue(response.ProjectId)
-	model.QuotaId = types.StringPointerValue(response.QuotaId)
 	model.Region = types.StringPointerValue(response.Region)
+	model.PlatformId = types.StringPointerValue(response.PlatformId)
+	model.OrgId = types.StringPointerValue(response.Guid)
+	model.Name = types.StringPointerValue(response.Name)
 	model.Status = types.StringPointerValue(response.Status)
 	model.Suspended = types.BoolPointerValue(response.Suspended)
+	model.QuotaId = types.StringPointerValue(response.QuotaId)
+	model.CreateAt = types.StringValue(response.CreatedAt.String())
 	model.UpdatedAt = types.StringValue(response.UpdatedAt.String())
-
 	return nil
 }
 

@@ -28,7 +28,8 @@ func NewScfOrganizationDataSource() datasource.DataSource {
 
 // scfOrganizationDataSource is the datasource implementation.
 type scfOrganizationDataSource struct {
-	client *scf.APIClient
+	client       *scf.APIClient
+	providerData core.ProviderData
 }
 
 func (s scfOrganizationDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) {
@@ -64,6 +65,14 @@ func (s scfOrganizationDataSource) Schema(ctx context.Context, request datasourc
 			"project_id": schema.StringAttribute{
 				Description: descriptions["project_id"],
 				Required:    true,
+				Validators: []validator.String{
+					validate.UUID(),
+					validate.NoSeparator(),
+				},
+			},
+			"org_id": schema.StringAttribute{
+				Description: descriptions["org_id"],
+				Computed:    true,
 				Validators: []validator.String{
 					validate.UUID(),
 					validate.NoSeparator(),
@@ -109,11 +118,10 @@ func (s scfOrganizationDataSource) Read(ctx context.Context, request datasource.
 
 	// Extract the project ID and instance id of the model
 	projectId := model.ProjectId.ValueString()
-	orgId := model.Id.ValueString()
+	orgId := model.OrgId.ValueString()
 
 	// Read the current scf organization via guid
-	// TODO region
-	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, "eu01", orgId).Execute()
+	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, s.providerData.GetRegion(), orgId).Execute()
 	if err != nil {
 		var oapiErr *oapierror.GenericOpenAPIError
 		ok := errors.As(err, &oapiErr)
