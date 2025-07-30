@@ -83,7 +83,7 @@ func (s scfOrganizationResource) Configure(ctx context.Context, request resource
 }
 
 func (s scfOrganizationResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = request.ProviderTypeName + "_scf"
+	response.TypeName = request.ProviderTypeName + "_scf_organization"
 }
 
 func (s scfOrganizationResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
