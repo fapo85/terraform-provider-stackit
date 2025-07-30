@@ -103,11 +103,11 @@ func (s scfOrganizationResource) ImportState(ctx context.Context, request resour
 	}
 
 	projectId := idParts[0]
-	orgGuid := idParts[1]
+	orgId := idParts[1]
 	// Set the project id and organization id in the state
 	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("project_id"), projectId)...)
-	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("org_id"), orgGuid)...)
-	tflog.Info(ctx, "Scf organization instance state imported")
+	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("org_id"), orgId)...)
+	tflog.Info(ctx, "Scf organization state imported")
 }
 
 func (s scfOrganizationResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {

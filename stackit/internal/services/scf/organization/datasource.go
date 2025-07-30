@@ -103,7 +103,7 @@ func (s scfOrganizationDataSource) Schema(ctx context.Context, request datasourc
 				Computed:    true,
 			},
 		},
-		Description: "STACKIT Cloud Foundry organization resource schema. Must have a `region` specified in the provider configuration.",
+		Description: "STACKIT Cloud Foundry organization datasource schema. Must have a `region` specified in the provider configuration.",
 	}
 }
 
