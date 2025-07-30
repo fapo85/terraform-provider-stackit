@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -21,6 +20,7 @@ import (
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/utils"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/validate"
 	"net/http"
+	"strings"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -44,12 +44,12 @@ type Model struct {
 	UpdatedAt  types.String `tfsdk:"updated_at"`
 }
 
-// NewScfOrganizationResource is a helper function to create a new scf organization resource instance.
+// NewScfOrganizationResource is a helper function to create a new scf organization resource.
 func NewScfOrganizationResource() resource.Resource {
 	return &scfOrganizationResource{}
 }
 
-// scfOrganizationResource implements the resource interface for scf organization instances.
+// scfOrganizationResource implements the resource interface for scf organization.
 type scfOrganizationResource struct {
 	client       *scf.APIClient
 	providerData core.ProviderData
@@ -90,19 +90,24 @@ func (s scfOrganizationResource) Metadata(ctx context.Context, request resource.
 }
 
 func (s scfOrganizationResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
-	//TODO how to map to a project, platform, region? Do we need a id out of multiple ids?
-	orgGuid, err := uuid.Parse(request.ID)
-	if err != nil {
+	// Split the import identifier to extract project ID and email.
+	idParts := strings.Split(request.ID, core.Separator)
+
+	// Ensure the import identifier format is correct.
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
 		core.LogAndAddError(ctx, &response.Diagnostics,
-			"Error importing scf organization instance",
-			fmt.Sprintf("Expected import identifier with UUID format. Got: %q", request.ID),
+			"Error importing scf organization",
+			fmt.Sprintf("Expected import identifier with format: [project_id],[org_id]  Got: %q", request.ID),
 		)
 		return
 	}
 
-	// Set the organization guid
-	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("id"), orgGuid)...)
-	tflog.Info(ctx, "Git instance state imported")
+	projectId := idParts[0]
+	orgGuid := idParts[1]
+	// Set the project id and organization id in the state
+	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("project_id"), projectId)...)
+	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("org_id"), orgGuid)...)
+	tflog.Info(ctx, "Scf organization instance state imported")
 }
 
 func (s scfOrganizationResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
