@@ -329,6 +329,8 @@ func mapFieldsUpdate(response *scf.OrgManager, model *Model) error {
 	model.Region = types.StringPointerValue(response.Region)
 	model.PlatformId = types.StringPointerValue(response.PlatformId)
 	model.ProjectId = types.StringPointerValue(response.ProjectId)
+	//TODO add orgId after sdk got generated from new version
+	//model.OrgId = types.StringPointerValue(response.OrgId)
 	model.UserId = types.StringPointerValue(response.Guid)
 	model.UserName = types.StringPointerValue(response.Username)
 	model.CreateAt = types.StringValue(response.CreatedAt.String())

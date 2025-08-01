@@ -132,7 +132,7 @@ func (s scfOrganizationManagerDataSource) Read(ctx context.Context, request data
 		return
 	}
 
-	err = mapFieldsUpdate(ctx, ScfOrgManager, &model)
+	err = mapFieldsUpdate(ScfOrgManager, &model)
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error reading scf organization manager", fmt.Sprintf("Processing API response: %v", err))
 		return
