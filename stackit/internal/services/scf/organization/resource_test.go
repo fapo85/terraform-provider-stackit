@@ -2,10 +2,12 @@ package organization
 
 import (
 	"fmt"
-	"github.com/stackitcloud/stackit-sdk-go/services/scf"
-	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/testutil"
 	"testing"
 	"time"
+
+	"github.com/stackitcloud/stackit-sdk-go/services/scf"
+
+	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/testutil"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"

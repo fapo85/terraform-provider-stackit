@@ -29,7 +29,7 @@ require (
 	github.com/stackitcloud/stackit-sdk-go/services/rabbitmq v0.25.1
 	github.com/stackitcloud/stackit-sdk-go/services/redis v0.25.1
 	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.17.1
-	github.com/stackitcloud/stackit-sdk-go/services/scf v0.1.0
+	github.com/stackitcloud/stackit-sdk-go/services/scf v0.2.0
 	github.com/stackitcloud/stackit-sdk-go/services/secretsmanager v0.13.1
 	github.com/stackitcloud/stackit-sdk-go/services/serverbackup v1.3.2
 	github.com/stackitcloud/stackit-sdk-go/services/serverupdate v1.2.1
@@ -49,7 +49,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.3 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-checkpoint v0.5.0 // indirect

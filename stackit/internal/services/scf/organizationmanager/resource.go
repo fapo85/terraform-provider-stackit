@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -13,13 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/stackitcloud/stackit-sdk-go/core/oapierror"
 	"github.com/stackitcloud/stackit-sdk-go/services/scf"
+
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/conversion"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/core"
 	scfUtils "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/scf/utils"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/utils"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/validate"
-	"net/http"
-	"strings"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -329,8 +331,7 @@ func mapFieldsUpdate(response *scf.OrgManager, model *Model) error {
 	model.Region = types.StringPointerValue(response.Region)
 	model.PlatformId = types.StringPointerValue(response.PlatformId)
 	model.ProjectId = types.StringPointerValue(response.ProjectId)
-	//TODO add orgId after sdk got generated from new version
-	//model.OrgId = types.StringPointerValue(response.OrgId)
+	model.OrgId = types.StringPointerValue(response.OrgId)
 	model.UserId = types.StringPointerValue(response.Guid)
 	model.UserName = types.StringPointerValue(response.Username)
 	model.CreateAt = types.StringValue(response.CreatedAt.String())

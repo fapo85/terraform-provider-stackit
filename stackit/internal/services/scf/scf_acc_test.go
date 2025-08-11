@@ -4,11 +4,12 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/stackitcloud/stackit-sdk-go/services/scf"
 	"maps"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stackitcloud/stackit-sdk-go/services/scf"
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -16,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	stackitSdkConfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	"github.com/stackitcloud/stackit-sdk-go/core/utils"
+
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/core"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/testutil"
 )
