@@ -5,14 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stackitcloud/stackit-sdk-go/services/scf"
-
-	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/testutil"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stackitcloud/stackit-sdk-go/core/utils"
+	"github.com/stackitcloud/stackit-sdk-go/services/scf"
 )
 
 var (
@@ -20,6 +17,7 @@ var (
 	testProjectId  = uuid.New().String()
 	testPlatformId = uuid.New().String()
 	testQuotaId    = uuid.New().String()
+	testRegion     = "eu01"
 )
 
 func TestMapFields(t *testing.T) {
@@ -64,7 +62,7 @@ func TestMapFields(t *testing.T) {
 				PlatformId: utils.Ptr(testPlatformId),
 				ProjectId:  utils.Ptr(testProjectId),
 				QuotaId:    utils.Ptr(testQuotaId),
-				Region:     utils.Ptr(testutil.Region),
+				Region:     utils.Ptr(testRegion),
 				Status:     utils.Ptr(""),
 				Suspended:  utils.Ptr(true),
 				UpdatedAt:  &createdTime,
@@ -74,7 +72,7 @@ func TestMapFields(t *testing.T) {
 				ProjectId:  types.StringValue(testProjectId),
 				OrgId:      types.StringValue(testOrgId),
 				Name:       types.StringValue("scf-full-instance"),
-				Region:     types.StringValue(testutil.Region),
+				Region:     types.StringValue(testRegion),
 				PlatformId: types.StringValue(testPlatformId),
 				CreateAt:   types.StringValue("2025-01-01 00:00:00 +0000 UTC"),
 				UpdatedAt:  types.StringValue("2025-01-01 00:00:00 +0000 UTC"),
