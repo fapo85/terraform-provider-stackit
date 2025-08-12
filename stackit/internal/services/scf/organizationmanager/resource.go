@@ -69,7 +69,7 @@ var descriptions = map[string]string{
 	"updated_at":  "The time when the organization manager was last updated",
 }
 
-func (s scfOrganizationManagerResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (s scfOrganizationManagerResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) { // nolint:gocritic // function signature required by Terraform
 	var ok bool
 	s.providerData, ok = conversion.ParseProviderData(ctx, request.ProviderData, &response.Diagnostics)
 	if !ok {
@@ -84,11 +84,11 @@ func (s scfOrganizationManagerResource) Configure(ctx context.Context, request r
 	tflog.Info(ctx, "scf client configured")
 }
 
-func (s scfOrganizationManagerResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (s scfOrganizationManagerResource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) { // nolint:gocritic // function signature required by Terraform
 	response.TypeName = request.ProviderTypeName + "_scf_organization_manager"
 }
 
-func (s scfOrganizationManagerResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
+func (s scfOrganizationManagerResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) { // nolint:gocritic // function signature required by Terraform
 	// Split the import identifier to extract project ID and email.
 	idParts := strings.Split(request.ID, core.Separator)
 
@@ -109,7 +109,7 @@ func (s scfOrganizationManagerResource) ImportState(ctx context.Context, request
 	tflog.Info(ctx, "Scf organization manager state imported")
 }
 
-func (s scfOrganizationManagerResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
+func (s scfOrganizationManagerResource) Schema(_ context.Context, _ resource.SchemaRequest, response *resource.SchemaResponse) { // nolint:gocritic // function signature required by Terraform
 	response.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -179,7 +179,7 @@ func (s scfOrganizationManagerResource) Schema(ctx context.Context, request reso
 	}
 }
 
-func (s scfOrganizationManagerResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
+func (s scfOrganizationManagerResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve the planned values for the resource.
 	var model Model
 	diags := request.Plan.Get(ctx, &model)
@@ -222,7 +222,7 @@ func (s scfOrganizationManagerResource) Create(ctx context.Context, request reso
 	tflog.Info(ctx, "Scf organization created")
 }
 
-func (s scfOrganizationManagerResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
+func (s scfOrganizationManagerResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve the current state of the resource.
 	var model Model
 	diags := request.State.Get(ctx, &model)
@@ -260,12 +260,12 @@ func (s scfOrganizationManagerResource) Read(ctx context.Context, request resour
 	tflog.Info(ctx, fmt.Sprintf("read scf organization %s", orgId))
 }
 
-func (s scfOrganizationManagerResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
+func (s scfOrganizationManagerResource) Update(ctx context.Context, _ resource.UpdateRequest, response *resource.UpdateResponse) { // nolint:gocritic // function signature required by Terraform
 	// organization manager cannot be updated, so we log an error.
 	core.LogAndAddError(ctx, &response.Diagnostics, "Error updating organization manager", "Organization Manager can't be updated")
 }
 
-func (s scfOrganizationManagerResource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
+func (s scfOrganizationManagerResource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve current state of the resource.
 	var model Model
 	diags := request.State.Get(ctx, &model)

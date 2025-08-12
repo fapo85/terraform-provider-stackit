@@ -58,7 +58,7 @@ func testScfOrgConfigVarsMinUpdated() config.Variables {
 	return tempConfig
 }
 
-//TODO add scf org manager tests
+// TODO add scf org manager tests
 
 func testScfOrgConfigVarsMaxUpdated() config.Variables {
 	tempConfig := make(config.Variables, len(testConfigVarsMax))

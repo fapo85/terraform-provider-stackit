@@ -34,11 +34,11 @@ type scfOrganizationDataSource struct {
 	providerData core.ProviderData
 }
 
-func (s scfOrganizationDataSource) Metadata(ctx context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) {
+func (s *scfOrganizationDataSource) Metadata(_ context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) { // nolint:gocritic // function signature required by Terraform
 	response.TypeName = request.ProviderTypeName + "_scf_organization"
 }
 
-func (s scfOrganizationDataSource) Schema(ctx context.Context, request datasource.SchemaRequest, response *datasource.SchemaResponse) {
+func (s *scfOrganizationDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, response *datasource.SchemaResponse) { // nolint:gocritic // function signature required by Terraform
 	response.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -109,7 +109,7 @@ func (s scfOrganizationDataSource) Schema(ctx context.Context, request datasourc
 	}
 }
 
-func (s scfOrganizationDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) {
+func (s *scfOrganizationDataSource) Read(ctx context.Context, request datasource.ReadRequest, response *datasource.ReadResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve the current state of the resource.
 	var model Model
 	diags := request.Config.Get(ctx, &model)

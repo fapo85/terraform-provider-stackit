@@ -72,7 +72,7 @@ var descriptions = map[string]string{
 	"updated_at":  "The time when the organization was last updated",
 }
 
-func (s scfOrganizationResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (s *scfOrganizationResource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	var ok bool
 	s.providerData, ok = conversion.ParseProviderData(ctx, request.ProviderData, &response.Diagnostics)
 	if !ok {
@@ -87,11 +87,11 @@ func (s scfOrganizationResource) Configure(ctx context.Context, request resource
 	tflog.Info(ctx, "scf client configured")
 }
 
-func (s scfOrganizationResource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (s *scfOrganizationResource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + "_scf_organization"
 }
 
-func (s scfOrganizationResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
+func (s *scfOrganizationResource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
 	// Split the import identifier to extract project ID and email.
 	idParts := strings.Split(request.ID, core.Separator)
 
@@ -112,7 +112,7 @@ func (s scfOrganizationResource) ImportState(ctx context.Context, request resour
 	tflog.Info(ctx, "Scf organization state imported")
 }
 
-func (s scfOrganizationResource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
+func (s *scfOrganizationResource) Schema(_ context.Context, _ resource.SchemaRequest, response *resource.SchemaResponse) {
 	response.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -183,7 +183,7 @@ func (s scfOrganizationResource) Schema(ctx context.Context, request resource.Sc
 	}
 }
 
-func (s scfOrganizationResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
+func (s *scfOrganizationResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve the planned values for the resource.
 	var model Model
 	diags := request.Plan.Get(ctx, &model)
@@ -252,7 +252,7 @@ func (s scfOrganizationResource) Create(ctx context.Context, request resource.Cr
 }
 
 // Read refreshes the Terraform state with the latest scf organization data.
-func (s scfOrganizationResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) {
+func (s scfOrganizationResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve the current state of the resource.
 	var model Model
 	diags := request.State.Get(ctx, &model)
@@ -291,8 +291,8 @@ func (s scfOrganizationResource) Read(ctx context.Context, request resource.Read
 }
 
 // Update attempts to update the resource.
-func (s scfOrganizationResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	//TODO do we have to check if the region was changed and the throw an error as this is not supported?
+func (s scfOrganizationResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) { // nolint:gocritic // function signature required by Terraform
+	// TODO do we have to check if the region was changed and the throw an error as this is not supported?
 
 	// Retrieve values from plan
 	var model Model
@@ -365,7 +365,7 @@ func (s scfOrganizationResource) Update(ctx context.Context, request resource.Up
 }
 
 // Delete deletes the git instance and removes it from the Terraform state on success.
-func (s scfOrganizationResource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
+func (s *scfOrganizationResource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve current state of the resource.
 	var model Model
 	diags := request.State.Get(ctx, &model)
@@ -386,7 +386,7 @@ func (s scfOrganizationResource) Delete(ctx context.Context, request resource.De
 		return
 	}
 
-	//TODO wait for organization deletion how to get this into the SDK?
+	// TODO wait for organization deletion how to get this into the SDK?
 
 	tflog.Info(ctx, "Scf organization deleted")
 }
