@@ -52,6 +52,7 @@ func (s *scfOrganizationManagerDataSource) Schema(_ context.Context, _ datasourc
 			"platform_id": schema.StringAttribute{
 				Description: descriptions["platform_id"],
 				Required:    false,
+				Computed:    true,
 				Validators: []validator.String{
 					validate.UUID(),
 					validate.NoSeparator(),

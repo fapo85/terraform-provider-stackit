@@ -132,7 +132,8 @@ func (s *scfOrganizationResource) Schema(_ context.Context, _ resource.SchemaReq
 			},
 			"platform_id": schema.StringAttribute{
 				Description: descriptions["platform_id"],
-				Required:    false,
+				Optional:    true,
+				Computed:    true,
 				Validators: []validator.String{
 					validate.UUID(),
 					validate.NoSeparator(),
@@ -156,7 +157,8 @@ func (s *scfOrganizationResource) Schema(_ context.Context, _ resource.SchemaReq
 			},
 			"quota_id": schema.StringAttribute{
 				Description: descriptions["quota_id"],
-				Required:    false,
+				Optional:    true,
+				Computed:    true,
 				Validators: []validator.String{
 					validate.UUID(),
 					validate.NoSeparator(),
@@ -172,7 +174,8 @@ func (s *scfOrganizationResource) Schema(_ context.Context, _ resource.SchemaReq
 			},
 			"suspended": schema.BoolAttribute{
 				Description: descriptions["suspended"],
-				Required:    false,
+				Optional:    true,
+				Computed:    true,
 			},
 			"updated_at": schema.StringAttribute{
 				Description: descriptions["updated_at"],
@@ -380,13 +383,11 @@ func (s *scfOrganizationResource) Delete(ctx context.Context, request resource.D
 	ctx = tflog.SetField(ctx, "org_id", orgId)
 
 	// Call API to delete the existing scf organization.
-	err, _ := s.client.DeleteOrganization(ctx, projectId, model.Region.ValueString(), orgId).Execute()
+	_, err := s.client.DeleteOrganization(ctx, projectId, model.Region.ValueString(), orgId).Execute()
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error deleting scf organization", fmt.Sprintf("Calling API: %v", err))
 		return
 	}
-
-	// TODO wait for organization deletion how to get this into the SDK?
 
 	tflog.Info(ctx, "Scf organization deleted")
 }
@@ -430,7 +431,7 @@ func toCreatePayload(model *Model) (scf.CreateOrganizationPayload, diag.Diagnost
 	payload := scf.CreateOrganizationPayload{
 		Name: model.Name.ValueStringPointer(),
 	}
-	if !model.PlatformId.IsNull() {
+	if !model.PlatformId.IsNull() && !model.PlatformId.IsUnknown() {
 		payload.PlatformId = model.PlatformId.ValueStringPointer()
 	}
 	return payload, diags
