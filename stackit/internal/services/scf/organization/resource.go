@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/stackitcloud/stackit-sdk-go/core/oapierror"
 	"github.com/stackitcloud/stackit-sdk-go/services/scf"
+	"github.com/stackitcloud/stackit-sdk-go/services/scf/wait"
 
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/conversion"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/core"
@@ -197,6 +198,9 @@ func (s *scfOrganizationResource) Create(ctx context.Context, request resource.C
 
 	// Set logging context with the project ID and instance ID.
 	region := model.Region.ValueString()
+	if region == "" {
+		region = s.providerData.GetRegion()
+	}
 	projectId := model.ProjectId.ValueString()
 	orgId := model.OrgId.ValueString()
 	orgName := model.Name.ValueString()
@@ -255,7 +259,7 @@ func (s *scfOrganizationResource) Create(ctx context.Context, request resource.C
 }
 
 // Read refreshes the Terraform state with the latest scf organization data.
-func (s scfOrganizationResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) { // nolint:gocritic // function signature required by Terraform
+func (s *scfOrganizationResource) Read(ctx context.Context, request resource.ReadRequest, response *resource.ReadResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve the current state of the resource.
 	var model Model
 	diags := request.State.Get(ctx, &model)
@@ -294,9 +298,7 @@ func (s scfOrganizationResource) Read(ctx context.Context, request resource.Read
 }
 
 // Update attempts to update the resource.
-func (s scfOrganizationResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) { // nolint:gocritic // function signature required by Terraform
-	// TODO do we have to check if the region was changed and the throw an error as this is not supported?
-
+func (s *scfOrganizationResource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) { // nolint:gocritic // function signature required by Terraform
 	// Retrieve values from plan
 	var model Model
 	diags := request.Plan.Get(ctx, &model)
@@ -386,6 +388,12 @@ func (s *scfOrganizationResource) Delete(ctx context.Context, request resource.D
 	_, err := s.client.DeleteOrganization(ctx, projectId, model.Region.ValueString(), orgId).Execute()
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error deleting scf organization", fmt.Sprintf("Calling API: %v", err))
+		return
+	}
+
+	_, err = wait.DeleteOrganizationWaitHandler(ctx, s.client, projectId, model.Region.ValueString(), orgId).WaitWithContext(ctx)
+	if err != nil {
+		core.LogAndAddError(ctx, &response.Diagnostics, "Error waiting for scf org deletion", fmt.Sprintf("SCFOrganization deleting waiting: %v", err))
 		return
 	}
 

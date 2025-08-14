@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+
 	"github.com/stackitcloud/terraform-provider-stackit/stackit"
 )
 
@@ -16,7 +17,7 @@ var (
 
 func main() {
 	var debug bool
-	flag.BoolVar(&debug, "debug", false, "allows debugging the provider")
+	flag.BoolVar(&debug, "debug", true, "allows debugging the provider")
 	flag.Parse()
 	err := providerserver.Serve(context.Background(), stackit.New(version), providerserver.ServeOpts{
 		Address: "registry.terraform.io/stackitcloud/stackit",

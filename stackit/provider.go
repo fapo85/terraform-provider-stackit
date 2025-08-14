@@ -75,6 +75,7 @@ import (
 	resourceManagerProject "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/resourcemanager/project"
 	scfOrganization "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/scf/organization"
 	scfOrganizationmanager "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/scf/organizationmanager"
+	scfPlatform "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/scf/platform"
 	secretsManagerInstance "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/secretsmanager/instance"
 	secretsManagerUser "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/secretsmanager/user"
 	serverBackupSchedule "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/serverbackup/schedule"
@@ -505,6 +506,7 @@ func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource
 		resourceManagerProject.NewProjectDataSource,
 		scfOrganization.NewScfOrganizationDataSource,
 		scfOrganizationmanager.NewScfOrganizationManagerDataSource,
+		scfPlatform.NewScfPlatformDataSource,
 		secretsManagerInstance.NewInstanceDataSource,
 		secretsManagerUser.NewUserDataSource,
 		sqlServerFlexInstance.NewInstanceDataSource,

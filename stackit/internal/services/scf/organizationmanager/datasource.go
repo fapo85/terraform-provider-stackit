@@ -47,6 +47,7 @@ func (s *scfOrganizationManagerDataSource) Schema(_ context.Context, _ datasourc
 			},
 			"region": schema.StringAttribute{
 				Description: descriptions["region"],
+				Optional:    true,
 				Computed:    true,
 			},
 			"platform_id": schema.StringAttribute{
