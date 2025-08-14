@@ -57,7 +57,7 @@ type scfOrganizationManagerResource struct {
 
 // descriptions for the attributes in the Schema
 var descriptions = map[string]string{
-	"id":          "Terraform's internal resource ID, structured as \"`project_id`,`user_id`\".",
+	"id":          "Terraform's internal resource ID, structured as \"`project_id`,`org_id`,`user_id`\".",
 	"region":      "The region where the organization of the organization manager is located",
 	"platform_id": "The ID of the platform associated with the organization of the organization manager",
 	"project_id":  "The ID of the project associated with the organization of the organization manager",
@@ -93,18 +93,20 @@ func (s *scfOrganizationManagerResource) ImportState(ctx context.Context, reques
 	idParts := strings.Split(request.ID, core.Separator)
 
 	// Ensure the import identifier format is correct.
-	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+	if len(idParts) != 3 || idParts[0] == "" || idParts[1] == "" || idParts[2] == "" {
 		core.LogAndAddError(ctx, &response.Diagnostics,
 			"Error importing scf organization manager",
-			fmt.Sprintf("Expected import identifier with format: [project_id],[user_id]  Got: %q", request.ID),
+			fmt.Sprintf("Expected import identifier with format: [project_id],[org_id],[user_id]  Got: %q", request.ID),
 		)
 		return
 	}
 
 	projectId := idParts[0]
-	userId := idParts[1]
+	orgId := idParts[1]
+	userId := idParts[2]
 	// Set the project id and organization id in the state
 	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("project_id"), projectId)...)
+	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("org_id"), orgId)...)
 	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("user_id"), userId)...)
 	tflog.Info(ctx, "Scf organization manager state imported")
 }
@@ -314,7 +316,7 @@ func mapFieldsCreate(response *scf.OrgManagerResponse, model *Model) error {
 	}
 
 	// Build the ID by combining the project ID and organization id and assign the model's fields.
-	model.Id = utils.BuildInternalTerraformId(model.ProjectId.ValueString(), *response.Guid)
+	model.Id = utils.BuildInternalTerraformId(model.ProjectId.ValueString(), *response.OrgId, *response.Guid)
 	model.Region = types.StringPointerValue(response.Region)
 	model.PlatformId = types.StringPointerValue(response.PlatformId)
 	model.ProjectId = types.StringPointerValue(response.ProjectId)
@@ -340,7 +342,7 @@ func mapFieldsUpdate(response *scf.OrgManager, model *Model) error {
 	}
 
 	// Build the ID by combining the project ID and organization id and assign the model's fields.
-	model.Id = utils.BuildInternalTerraformId(model.ProjectId.ValueString(), *response.Guid)
+	model.Id = utils.BuildInternalTerraformId(model.ProjectId.ValueString(), *response.OrgId, *response.Guid)
 	model.Region = types.StringPointerValue(response.Region)
 	model.PlatformId = types.StringPointerValue(response.PlatformId)
 	model.ProjectId = types.StringPointerValue(response.ProjectId)
