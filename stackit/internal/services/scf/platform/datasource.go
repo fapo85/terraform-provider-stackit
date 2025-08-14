@@ -184,6 +184,7 @@ func mapFields(response *scf.Platforms, model *Model) error {
 	model.Guid = types.StringPointerValue(response.Guid)
 	model.ProjectId = types.StringPointerValue(model.ProjectId.ValueStringPointer())
 	model.SystemId = types.StringPointerValue(response.SystemId)
+	model.DisplayName = types.StringPointerValue(response.DisplayName)
 	model.Region = types.StringPointerValue(response.Region)
 	model.ApiUrl = types.StringPointerValue(response.ApiUrl)
 	model.ConsoleUrl = types.StringPointerValue(response.ConsoleUrl)
