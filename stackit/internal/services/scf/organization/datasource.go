@@ -14,13 +14,16 @@ import (
 	"github.com/stackitcloud/stackit-sdk-go/core/oapierror"
 	"github.com/stackitcloud/stackit-sdk-go/services/scf"
 
+	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/conversion"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/core"
+	scfUtils "github.com/stackitcloud/terraform-provider-stackit/stackit/internal/services/scf/utils"
 	"github.com/stackitcloud/terraform-provider-stackit/stackit/internal/validate"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ datasource.DataSource = &scfOrganizationDataSource{}
+	_ datasource.DataSource              = &scfOrganizationDataSource{}
+	_ datasource.DataSourceWithConfigure = &scfOrganizationDataSource{}
 )
 
 // NewScfOrganizationDataSource creates a new instance of the scfOrganizationDataSource.
@@ -32,6 +35,21 @@ func NewScfOrganizationDataSource() datasource.DataSource {
 type scfOrganizationDataSource struct {
 	client       *scf.APIClient
 	providerData core.ProviderData
+}
+
+func (s *scfOrganizationDataSource) Configure(ctx context.Context, request datasource.ConfigureRequest, response *datasource.ConfigureResponse) {
+	var ok bool
+	s.providerData, ok = conversion.ParseProviderData(ctx, request.ProviderData, &response.Diagnostics)
+	if !ok {
+		return
+	}
+
+	apiClient := scfUtils.ConfigureClient(ctx, &s.providerData, &response.Diagnostics)
+	if response.Diagnostics.HasError() {
+		return
+	}
+	s.client = apiClient
+	tflog.Info(ctx, "scf client configured")
 }
 
 func (s *scfOrganizationDataSource) Metadata(_ context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) { // nolint:gocritic // function signature required by Terraform
@@ -51,7 +69,7 @@ func (s *scfOrganizationDataSource) Schema(_ context.Context, _ datasource.Schem
 			},
 			"name": schema.StringAttribute{
 				Description: descriptions["name"],
-				Required:    true,
+				Computed:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
 				},
@@ -75,7 +93,7 @@ func (s *scfOrganizationDataSource) Schema(_ context.Context, _ datasource.Schem
 			},
 			"org_id": schema.StringAttribute{
 				Description: descriptions["org_id"],
-				Computed:    true,
+				Required:    true,
 				Validators: []validator.String{
 					validate.UUID(),
 					validate.NoSeparator(),
@@ -92,6 +110,7 @@ func (s *scfOrganizationDataSource) Schema(_ context.Context, _ datasource.Schem
 			},
 			"region": schema.StringAttribute{
 				Description: descriptions["region"],
+				Optional:    true,
 				Computed:    true,
 			},
 			"status": schema.StringAttribute{
@@ -125,8 +144,14 @@ func (s *scfOrganizationDataSource) Read(ctx context.Context, request datasource
 	projectId := model.ProjectId.ValueString()
 	orgId := model.OrgId.ValueString()
 
+	// Extract the region
+	region := model.Region.ValueString()
+	if region == "" {
+		region = s.providerData.GetRegion()
+	}
+
 	// Read the current scf organization via guid
-	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, s.providerData.GetRegion(), orgId).Execute()
+	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, region, orgId).Execute()
 	if err != nil {
 		var oapiErr *oapierror.GenericOpenAPIError
 		ok := errors.As(err, &oapiErr)

@@ -272,8 +272,14 @@ func (s *scfOrganizationResource) Read(ctx context.Context, request resource.Rea
 	projectId := model.ProjectId.ValueString()
 	orgId := model.OrgId.ValueString()
 
+	// Extract the region
+	region := model.Region.ValueString()
+	if region == "" {
+		region = s.providerData.GetRegion()
+	}
+
 	// Read the current scf organization via guid
-	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, s.providerData.GetRegion(), orgId).Execute()
+	scfOrgResponse, err := s.client.GetOrganization(ctx, projectId, region, orgId).Execute()
 	if err != nil {
 		var oapiErr *oapierror.GenericOpenAPIError
 		ok := errors.As(err, &oapiErr)
@@ -307,6 +313,9 @@ func (s *scfOrganizationResource) Update(ctx context.Context, request resource.U
 		return
 	}
 	region := model.Region.ValueString()
+	if region == "" {
+		region = s.providerData.GetRegion()
+	}
 	projectId := model.ProjectId.ValueString()
 	orgId := model.OrgId.ValueString()
 	name := model.Name.ValueString()
@@ -315,6 +324,7 @@ func (s *scfOrganizationResource) Update(ctx context.Context, request resource.U
 
 	ctx = tflog.SetField(ctx, "project_id", projectId)
 	ctx = tflog.SetField(ctx, "org_id", orgId)
+	ctx = tflog.SetField(ctx, "region", region)
 
 	// Retrieve values from state
 	var stateModel Model
@@ -322,6 +332,16 @@ func (s *scfOrganizationResource) Update(ctx context.Context, request resource.U
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
+	}
+
+	if projectId == "" {
+		panic("projectId is nil")
+	}
+	if orgId == "" {
+		panic("orgId is nil")
+	}
+	if region == "" {
+		panic("region is nil")
 	}
 
 	org, err := s.client.GetOrganization(ctx, projectId, region, orgId).Execute()
@@ -381,11 +401,19 @@ func (s *scfOrganizationResource) Delete(ctx context.Context, request resource.D
 
 	projectId := model.ProjectId.ValueString()
 	orgId := model.OrgId.ValueString()
+
+	// Extract the region
+	region := model.Region.ValueString()
+	if region == "" {
+		region = s.providerData.GetRegion()
+	}
+
 	ctx = tflog.SetField(ctx, "project_id", projectId)
 	ctx = tflog.SetField(ctx, "org_id", orgId)
+	ctx = tflog.SetField(ctx, "region", region)
 
 	// Call API to delete the existing scf organization.
-	_, err := s.client.DeleteOrganization(ctx, projectId, model.Region.ValueString(), orgId).Execute()
+	_, err := s.client.DeleteOrganization(ctx, projectId, region, orgId).Execute()
 	if err != nil {
 		core.LogAndAddError(ctx, &response.Diagnostics, "Error deleting scf organization", fmt.Sprintf("Calling API: %v", err))
 		return

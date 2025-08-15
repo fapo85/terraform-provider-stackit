@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/config"
+
 	"github.com/stackitcloud/terraform-provider-stackit/stackit"
 )
 
@@ -468,6 +469,7 @@ func ScfProviderConfig() string {
 	}
 	return fmt.Sprintf(`
 		provider "stackit" {
+			default_region = "eu01"
 			scf_custom_endpoint = "%s"
 		}`,
 		ScfCustomEndpoint,

@@ -32,10 +32,11 @@ var nameMin = fmt.Sprintf("scf-min-%s-org", acctest.RandStringFromCharSet(5, acc
 var nameMinUpdated = fmt.Sprintf("git-min-%s-org", acctest.RandStringFromCharSet(5, acctest.CharSetAlphaNum))
 var nameMax = fmt.Sprintf("scf-max-%s-org", acctest.RandStringFromCharSet(5, acctest.CharSetAlphaNum))
 var nameMaxUpdated = fmt.Sprintf("scf-max-%s-org", acctest.RandStringFromCharSet(5, acctest.CharSetAlphaNum))
-var platformIdMax = uuid.New().String()
+var platformIdMax = "0a3d1188-353a-4004-832c-53039c0e3868"
 var quotaIdMax = uuid.New().String()
 var quotaIdMaxUpdated = uuid.New().String()
 var suspendedMax = true
+var region = "eu01"
 
 var testConfigVarsMin = config.Variables{
 	"project_id": config.StringVariable(testutil.ProjectId),
@@ -48,6 +49,7 @@ var testConfigVarsMax = config.Variables{
 	"platform_id": config.StringVariable(platformIdMax),
 	"quota_id":    config.StringVariable(quotaIdMax),
 	"suspended":   config.BoolVariable(suspendedMax),
+	"region":      config.StringVariable(region),
 }
 
 func testScfOrgConfigVarsMinUpdated() config.Variables {
@@ -100,7 +102,7 @@ func TestAccScfOrganizationMin(t *testing.T) {
 
 					data "stackit_scf_organization" "org" {
 						project_id  = stackit_scf_organization.org.project_id
-						instance_id = stackit_scf_organization.org.instance_id
+						org_id = stackit_scf_organization.org.org_id
 					}
 					`, testutil.ScfProviderConfig()+resourceMin,
 				),
@@ -220,7 +222,8 @@ func TestAccScfOrgMax(t *testing.T) {
 
 					data "stackit_scf_organization" "org" {
 						project_id  = stackit_scf_organization.org.project_id
-						instance_id = stackit_scf_organization.org.instance_id
+						org_id = stackit_scf_organization.org.org_id
+						region = var.region
 					}
 					`, testutil.ScfProviderConfig()+resourceMax,
 				),

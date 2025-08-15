@@ -29,7 +29,7 @@ require (
 	github.com/stackitcloud/stackit-sdk-go/services/rabbitmq v0.25.1
 	github.com/stackitcloud/stackit-sdk-go/services/redis v0.25.1
 	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.17.1
-	github.com/stackitcloud/stackit-sdk-go/services/scf v0.2.0
+	github.com/stackitcloud/stackit-sdk-go/services/scf v0.2.1
 	github.com/stackitcloud/stackit-sdk-go/services/secretsmanager v0.13.1
 	github.com/stackitcloud/stackit-sdk-go/services/serverbackup v1.3.2
 	github.com/stackitcloud/stackit-sdk-go/services/serverupdate v1.2.1
@@ -42,6 +42,8 @@ require (
 )
 
 require github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
+
+replace github.com/stackitcloud/stackit-sdk-go/services/scf => ../stackit-sdk-go/services/scf
 
 require (
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
